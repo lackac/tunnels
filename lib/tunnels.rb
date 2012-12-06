@@ -103,6 +103,8 @@ module Tunnels
     def initialize(client_port, options)
       super client_port
 
+      @ssl_options = {}
+      return unless options['config_file']
       base_path = File.dirname File.expand_path options['config_file']
 
       @ssl_options = {
