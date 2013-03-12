@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'fileutils'
+require 'ostruct'
+require 'erb'
+require 'yaml'
+
+common_name = ARGV[0]
+raise 'Missing common name' unless common_name
+
+TUNNELS_PORT=50626
+
+ruby_path = File.join(RbConfig::CONFIG["bindir"],
+                      RbConfig::CONFIG["RUBY_INSTALL_NAME"] +
+                      RbConfig::CONFIG["EXEEXT"])
+
+gem_path = File.absolute_path(File.join(File.dirname(__FILE__), '..'))
+service_path = File.join(gem_path, 'bin', 'tunnels')
+
+ssl_path = File.join(Dir.home, '.ssl')
+
+# create OpenSSL config file
+
+openssl_config_template_namespace = OpenStruct.new(common_name: common_name)
+
+openssl_config_template_path = File.join(gem_path, 'lib', 'tunnels', 'templates', 'openssl.config.erb')
+openssl_config_template = File.read(openssl_config_template_path)
+openssl_config = ERB.new(openssl_config_template).result(openssl_config_template_namespace.instance_eval { binding })
+
+FileUtils.mkdir_p(ssl_path)
+openssl_config_path = File.join(ssl_path, 'openssl.config')
+
+File.open(openssl_config_path, 'w') { |f| f.print openssl_config }
+
+# create OpenSSL certificate
+
+openssl_key_path = File.join(ssl_path, "#{common_name}.key")
+openssl_cert_path = File.join(ssl_path, "#{common_name}.crt")
+
+`openssl req -config #{openssl_config_path} -new -x509 -keyout #{openssl_key_path} -out #{openssl_cert_path} -nodes -days 6500`
+
+# create tunnels config file
+tunnel_config = {
+  'server' => {
+    'certificate_file' => "#{common_name}.crt",
+    'private_key_file' => "#{common_name}.key"
+  },
+  'client' => {
+    'verify' => false
+  }
+}
+
+tunnel_config_path = File.join(ssl_path, 'tunnels.yml')
+File.open(tunnel_config_path, 'w') { |f| f.puts tunnel_config.to_yaml }
+
