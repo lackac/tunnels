@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
-require File.absolute_path("#{File.dirname(__FILE__)}/../lib/tunnels/generator")
 
+require File.absolute_path("#{File.dirname(__FILE__)}/../lib/tunnels/generator")
 require 'fileutils'
 
 common_name = ARGV[0]
@@ -19,7 +19,7 @@ FileUtils.mkdir_p(launchd_path)
 
 # create OpenSSL config file
 openssl_config_path = File.join(ssl_path, 'openssl.config')
-Tunnels::Generator.new('openssl.config').write(openssl_config_path, common_name => common_name)
+Tunnels::Generator.new('openssl.config').write(openssl_config_path, :common_name => common_name)
 
 # create OpenSSL certificate
 openssl_key_path = File.join(ssl_path, "#{common_name}.key")

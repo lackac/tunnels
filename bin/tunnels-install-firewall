@@ -1,9 +1,7 @@
 #!/usr/bin/env ruby
 
+require File.absolute_path("#{File.dirname(__FILE__)}/../lib/tunnels/generator")
 require 'fileutils'
-
-common_name = ARGV[0]
-raise 'Missing common name' unless common_name
 
 tunnels_port = 50626
 

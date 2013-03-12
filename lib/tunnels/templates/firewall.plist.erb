@@ -3,12 +3,12 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string><%= ERB::Util.h(common_name_reverse) %>.firewall</string>
+  <string>gem.tunnels.firewall</string>
   <key>ProgramArguments</key>
   <array>
     <string>sh</string>
     <string>-c</string>
-    <string>ipfw add fwd 127.0.0.1,<%= ERB::Util.h(tunnels_port) %> tcp from any to me dst-port 443 in &amp;&amp; sysctl -w net.inet.ip.forwarding=1</string>
+    <string>ipfw add fwd 127.0.0.1,<%= tunnels_port %> tcp from any to me dst-port 443 in &amp;&amp; sysctl -w net.inet.ip.forwarding=1</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
