@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string><%= ERB::Util.h(common_name_reverse) %>.tunnels</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string><%= ERB::Util.h(ruby_path) %></string>
+    <string><%= ERB::Util.h(service_path) %></string>
+    <string><%= ERB::Util.h(tunnels_port) %></string>
+    <string>80</string>
+    <string><%= ERB::Util.h(tunnel_config_path) %></string>
+  </array>
+  <key>KeepAlive</key>
+  <true/>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>

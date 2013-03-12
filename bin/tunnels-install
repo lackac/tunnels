@@ -8,8 +8,9 @@ require 'yaml'
 
 common_name = ARGV[0]
 raise 'Missing common name' unless common_name
+common_name_reverse = common_name.split('.').reverse.join('.')
 
-TUNNELS_PORT=50626
+tunnels_port=50626
 
 ruby_path = File.join(RbConfig::CONFIG["bindir"],
                       RbConfig::CONFIG["RUBY_INSTALL_NAME"] +
@@ -52,5 +53,22 @@ tunnel_config = {
 }
 
 tunnel_config_path = File.join(ssl_path, 'tunnels.yml')
-File.open(tunnel_config_path, 'w') { |f| f.puts tunnel_config.to_yaml }
+File.open(tunnel_config_path, 'w') { |f| f.print tunnel_config.to_yaml }
+
+# create tunnels launchd configation
+
+tunnels_launchd_config_template_namespace = OpenStruct.new(common_name_reverse: common_name_reverse,
+                                                           ruby_path:           ruby_path,
+                                                           service_path:        service_path,
+                                                           tunnels_port:        tunnels_port,
+                                                           tunnel_config_path:  tunnel_config_path)
+
+tunnels_launchd_config_template_path = File.join(gem_path, 'lib', 'tunnels', 'templates', 'tunnels.plist.erb')
+tunnels_launchd_config_template = File.read(tunnels_launchd_config_template_path)
+tunnels_launchd_config = ERB.new(tunnels_launchd_config_template).result(tunnels_launchd_config_template_namespace.instance_eval { binding })
+
+tunnels_launchd_config_path = File.join(Dir.home, 'Library', 'LaunchAgents', "#{common_name_reverse}.tunnels.plist")
+
+File.open(tunnels_launchd_config_path, 'w') { |f| f.print tunnels_launchd_config }
+`launchctl load #{tunnels_launchd_config_path}`
 
