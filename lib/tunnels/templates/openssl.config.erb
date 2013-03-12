@@ -1,7 +1,17 @@
 [ req ]
-prompt             = no
-distinguished_name = req_DN
-string_mask        = nombstr
+prompt                  = no
+default_bits            = 4096
+string_mask             = nombstr
+distinguished_name      = req_dn
+x509_extensions         = v3_ca
 
-[ req_DN ]
-commonName         = *.<%= common_name %>
+[ req_dn ]
+0.organizationName      = ACME
+organizationalUnitName  = Development
+commonName              = *.<%= common_name %>
+emailAddress            = info@<%= common_name %>
+
+[ v3_ca ]
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always,issuer:always
+basicConstraints        = CA:true
