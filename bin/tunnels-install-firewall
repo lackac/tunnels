@@ -1,29 +1,16 @@
 #!/usr/bin/env ruby
 
-require 'rubygems'
 require 'fileutils'
-require 'ostruct'
-require 'erb'
-require 'yaml'
 
 common_name = ARGV[0]
 raise 'Missing common name' unless common_name
-common_name_reverse = common_name.split('.').reverse.join('.')
 
-tunnels_port=50626
+tunnels_port = 50626
 
-gem_path = File.absolute_path(File.join(File.dirname(__FILE__), '..'))
+launchd_path = File.join('/', 'Library', 'LaunchDaemons')
+FileUtils.mkdir_p(launchd_path)
 
 # create firewall launchd configation
-
-firewall_launchd_config_template_namespace = OpenStruct.new(common_name_reverse: common_name_reverse,
-                                                            tunnels_port:        tunnels_port)
-
-firewall_launchd_config_template_path = File.join(gem_path, 'lib', 'tunnels', 'templates', 'firewall.plist.erb')
-firewall_launchd_config_template = File.read(firewall_launchd_config_template_path)
-firewall_launchd_config = ERB.new(firewall_launchd_config_template).result(firewall_launchd_config_template_namespace.instance_eval { binding })
-
-firewall_launchd_config_path = File.join('/', 'Library', 'LaunchDaemons', "#{common_name_reverse}.firewall.plist")
-
-File.open(firewall_launchd_config_path, 'w') { |f| f.print firewall_launchd_config }
+firewall_launchd_config_path = File.join(launchd_path, "gem.firewall.plist")
+Tunnels::Generator.new('firewall.plist').write(firewall_launchd_config_path, :tunnels_port => tunnels_port)
 `launchctl load #{firewall_launchd_config_path}`

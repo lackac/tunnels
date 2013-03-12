@@ -1,76 +1,43 @@
 #!/usr/bin/env ruby
+require File.absolute_path("#{File.dirname(__FILE__)}/../lib/tunnels/generator")
 
-require 'rubygems'
 require 'fileutils'
-require 'ostruct'
-require 'erb'
-require 'yaml'
 
 common_name = ARGV[0]
 raise 'Missing common name' unless common_name
-common_name_reverse = common_name.split('.').reverse.join('.')
 
-tunnels_port=50626
-
-ruby_path = File.join(RbConfig::CONFIG["bindir"],
-                      RbConfig::CONFIG["RUBY_INSTALL_NAME"] +
-                      RbConfig::CONFIG["EXEEXT"])
-
-gem_path = File.absolute_path(File.join(File.dirname(__FILE__), '..'))
+tunnels_port = 50626
+ruby_path    = File.join(RbConfig::CONFIG["bindir"], RbConfig::CONFIG["RUBY_INSTALL_NAME"] + RbConfig::CONFIG["EXEEXT"])
+gem_path     = File.absolute_path(File.join(File.dirname(__FILE__), '..'))
 service_path = File.join(gem_path, 'bin', 'tunnels')
 
 ssl_path = File.join(Dir.home, '.ssl')
+FileUtils.mkdir_p(ssl_path)
+
+launchd_path = File.join(Dir.home, 'Library', 'LaunchAgents')
+FileUtils.mkdir_p(launchd_path)
 
 # create OpenSSL config file
-
-openssl_config_template_namespace = OpenStruct.new(common_name: common_name)
-
-openssl_config_template_path = File.join(gem_path, 'lib', 'tunnels', 'templates', 'openssl.config.erb')
-openssl_config_template = File.read(openssl_config_template_path)
-openssl_config = ERB.new(openssl_config_template).result(openssl_config_template_namespace.instance_eval { binding })
-
-FileUtils.mkdir_p(ssl_path)
 openssl_config_path = File.join(ssl_path, 'openssl.config')
-
-File.open(openssl_config_path, 'w') { |f| f.print openssl_config }
+Tunnels::Generator.new('openssl.config').write(openssl_config_path, common_name => common_name)
 
 # create OpenSSL certificate
-
 openssl_key_path = File.join(ssl_path, "#{common_name}.key")
-openssl_cert_path = File.join(ssl_path, "#{common_name}.crt")
+openssl_crt_path = File.join(ssl_path, "#{common_name}.crt")
 
-if !File.exist?(openssl_key_path) && !File.exist?(openssl_cert_path)
-  `openssl req -config #{openssl_config_path} -new -x509 -keyout #{openssl_key_path} -out #{openssl_cert_path} -nodes -days 6500`
-  `open '/Applications/Utilities/Keychain Access.app' #{openssl_cert_path}`
+if !File.exist?(openssl_key_path) && !File.exist?(openssl_crt_path)
+  `openssl req -config #{openssl_config_path} -new -x509 -keyout #{openssl_key_path} -out #{openssl_crt_path} -nodes -days 6500`
+  `open '/Applications/Utilities/Keychain Access.app' #{openssl_crt_path}`
 end
 
 # create tunnels config file
-tunnel_config = {
-  'server' => {
-    'certificate_file' => "#{common_name}.crt",
-    'private_key_file' => "#{common_name}.key"
-  },
-  'client' => {
-    'verify' => false
-  }
-}
-
 tunnel_config_path = File.join(ssl_path, 'tunnels.yml')
-File.open(tunnel_config_path, 'w') { |f| f.print tunnel_config.to_yaml }
+Tunnels::Generator.new('tunnels.yml').write(tunnel_config_path, common_name: common_name)
 
-# create tunnels launchd configation
-
-tunnels_launchd_config_template_namespace = OpenStruct.new(common_name_reverse: common_name_reverse,
-                                                           ruby_path:           ruby_path,
-                                                           service_path:        service_path,
-                                                           tunnels_port:        tunnels_port,
-                                                           tunnel_config_path:  tunnel_config_path)
-
-tunnels_launchd_config_template_path = File.join(gem_path, 'lib', 'tunnels', 'templates', 'tunnels.plist.erb')
-tunnels_launchd_config_template = File.read(tunnels_launchd_config_template_path)
-tunnels_launchd_config = ERB.new(tunnels_launchd_config_template).result(tunnels_launchd_config_template_namespace.instance_eval { binding })
-
-tunnels_launchd_config_path = File.join(Dir.home, 'Library', 'LaunchAgents', "#{common_name_reverse}.tunnels.plist")
-
-File.open(tunnels_launchd_config_path, 'w') { |f| f.print tunnels_launchd_config }
+# create and load tunnels launchd configation
+tunnels_launchd_config_path = File.join(launchd_path, "gem.tunnels.plist")
+Tunnels::Generator.new('tunnels.plist').write(tunnels_launchd_config_path, :ruby_path          => ruby_path,
+                                                                           :service_path       => service_path,
+                                                                           :tunnels_port       => tunnels_port,
+                                                                           :tunnel_config_path => tunnel_config_path)
 `launchctl load #{tunnels_launchd_config_path}`
