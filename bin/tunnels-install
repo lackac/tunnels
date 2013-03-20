@@ -4,7 +4,7 @@ require File.absolute_path("#{File.dirname(__FILE__)}/../lib/tunnels/generator")
 require 'fileutils'
 
 common_name = ARGV[0]
-raise 'Missing common name' unless common_name
+raise 'Usage: tunnels-install <domain>' unless common_name
 
 tunnels_port = 443
 ruby_path    = File.join(RbConfig::CONFIG["bindir"], RbConfig::CONFIG["RUBY_INSTALL_NAME"] + RbConfig::CONFIG["EXEEXT"])
