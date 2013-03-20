@@ -26,7 +26,7 @@ openssl_crt_path = File.join(ssl_path, "#{common_name}.crt")
 
 if !File.exist?(openssl_key_path) && !File.exist?(openssl_crt_path)
   `openssl req -config #{openssl_config_path} -new -x509 -keyout #{openssl_key_path} -out #{openssl_crt_path} -nodes -days 6500`
-  `open '/Applications/Utilities/Keychain Access.app' #{openssl_crt_path}`
+  `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain #{openssl_crt_path}`
 end
 
 # create tunnels config file
