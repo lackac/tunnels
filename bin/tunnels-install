@@ -4,14 +4,13 @@ require File.absolute_path("#{File.dirname(__FILE__)}/../lib/tunnels/generator")
 require 'fileutils'
 
 common_name = ARGV[0]
-raise 'Usage: tunnels-install <domain>' unless common_name
+rvm_wrapper = ARGV[1]
+raise 'Usage: tunnels-install <domain> <rvm wrapper name>' unless common_name && rvm_wrapper
 
 tunnels_port = 443
-ruby_path    = File.join(RbConfig::CONFIG["bindir"], RbConfig::CONFIG["RUBY_INSTALL_NAME"] + RbConfig::CONFIG["EXEEXT"])
-gem_path     = File.absolute_path(File.join(File.dirname(__FILE__), '..'))
-service_path = File.join(gem_path, 'bin', 'tunnels')
 
 ssl_path = File.join(Dir.home, '.ssl')
+service_path = File.join(Dir.home, '.rvm', 'bin', rvm_wrapper)
 FileUtils.mkdir_p(ssl_path)
 
 launchd_path = File.join(Dir.home, 'Library', 'LaunchAgents')
@@ -36,8 +35,7 @@ Tunnels::Generator.new('tunnels.yml').write(tunnel_config_path, common_name: com
 
 # create and load tunnels launchd configation
 tunnels_launchd_config_path = File.join(launchd_path, "gem.tunnels.plist")
-Tunnels::Generator.new('tunnels.plist').write(tunnels_launchd_config_path, :ruby_path          => ruby_path,
-                                                                           :service_path       => service_path,
+Tunnels::Generator.new('tunnels.plist').write(tunnels_launchd_config_path, :service_path       => service_path,
                                                                            :tunnels_port       => tunnels_port,
                                                                            :tunnel_config_path => tunnel_config_path)
 `launchctl load #{tunnels_launchd_config_path}`
