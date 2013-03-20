@@ -13,12 +13,12 @@ ssl_path = File.join(Dir.home, '.ssl')
 service_path = File.join(Dir.home, '.rvm', 'bin', rvm_wrapper)
 FileUtils.mkdir_p(ssl_path)
 
-launchd_path = File.join(Dir.home, 'Library', 'LaunchAgents')
+launchd_path = File.join('/Library', 'LaunchDaemons')
 FileUtils.mkdir_p(launchd_path)
 
 # create OpenSSL config file
 openssl_config_path = File.join(ssl_path, 'openssl.config')
-Tunnels::Generator.new('openssl.config').write(openssl_config_path, :common_name => common_name)
+#Tunnels::Generator.new('openssl.config').write(openssl_config_path, :common_name => common_name)
 
 # create OpenSSL certificate
 openssl_key_path = File.join(ssl_path, "#{common_name}.key")
@@ -26,16 +26,20 @@ openssl_crt_path = File.join(ssl_path, "#{common_name}.crt")
 
 if !File.exist?(openssl_key_path) && !File.exist?(openssl_crt_path)
   `openssl req -config #{openssl_config_path} -new -x509 -keyout #{openssl_key_path} -out #{openssl_crt_path} -nodes -days 6500`
-  `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain #{openssl_crt_path}`
 end
+
+`sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain #{openssl_crt_path}`
 
 # create tunnels config file
 tunnel_config_path = File.join(ssl_path, 'tunnels.yml')
 Tunnels::Generator.new('tunnels.yml').write(tunnel_config_path, common_name: common_name)
 
 # create and load tunnels launchd configation
+tunnels_launchd_temp_path = File.join(ssl_path, "gem.tunnels.plist")
 tunnels_launchd_config_path = File.join(launchd_path, "gem.tunnels.plist")
-Tunnels::Generator.new('tunnels.plist').write(tunnels_launchd_config_path, :service_path       => service_path,
+Tunnels::Generator.new('tunnels.plist').write(tunnels_launchd_temp_path, :service_path       => service_path,
                                                                            :tunnels_port       => tunnels_port,
                                                                            :tunnel_config_path => tunnel_config_path)
-`launchctl load #{tunnels_launchd_config_path}`
+`sudo chown root:wheel #{tunnels_launchd_temp_path}`
+`sudo mv #{tunnels_launchd_temp_path} #{tunnels_launchd_config_path}`
+`sudo launchctl load -w #{tunnels_launchd_config_path}`
