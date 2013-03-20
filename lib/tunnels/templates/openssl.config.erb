@@ -8,7 +8,7 @@ x509_extensions         = v3_ca
 [ req_dn ]
 0.organizationName      = ACME
 organizationalUnitName  = Development
-commonName              = *.<%= common_name %>
+commonName              = <%= common_name %>
 emailAddress            = info@<%= common_name %>
 
 [ v3_ca ]
