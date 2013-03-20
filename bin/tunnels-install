@@ -6,7 +6,7 @@ require 'fileutils'
 common_name = ARGV[0]
 raise 'Missing common name' unless common_name
 
-tunnels_port = 50626
+tunnels_port = 443
 ruby_path    = File.join(RbConfig::CONFIG["bindir"], RbConfig::CONFIG["RUBY_INSTALL_NAME"] + RbConfig::CONFIG["EXEEXT"])
 gem_path     = File.absolute_path(File.join(File.dirname(__FILE__), '..'))
 service_path = File.join(gem_path, 'bin', 'tunnels')
