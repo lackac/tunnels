@@ -3,9 +3,9 @@
 require File.absolute_path("#{File.dirname(__FILE__)}/../lib/tunnels/generator")
 require 'fileutils'
 
-raise 'Usage: tunnels-install <domain> [service_path]' unless ARGV.size > 0
+raise 'Usage: tunnels-install <domains> [service_path]' unless ARGV.size > 0
 
-common_name = ARGV[0]
+domains = ARGV[0].split(',')
 service_path = ARGV[1] || $0.sub(/-install$/, '')
 
 tunnels_port = 443
@@ -21,18 +21,22 @@ openssl_config_path = File.join(ssl_path, 'openssl.config')
 Tunnels::Generator.new('openssl.config').write(openssl_config_path, :domains => domains)
 
 # create OpenSSL certificate
-openssl_key_path = File.join(ssl_path, "#{common_name}.key")
-openssl_crt_path = File.join(ssl_path, "#{common_name}.crt")
+openssl_key_path = File.join(ssl_path, "tunnels.key")
+openssl_crt_path = File.join(ssl_path, "tunnels.crt")
 
-if !File.exist?(openssl_key_path) && !File.exist?(openssl_crt_path)
-  `openssl req -config #{openssl_config_path} -new -x509 -keyout #{openssl_key_path} -out #{openssl_crt_path} -nodes -days 6500`
+unless File.exists?(openssl_key_path)
+  system "openssl genrsa -out #{openssl_key_path} 2048"
 end
 
-`sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain #{openssl_crt_path}`
+unless File.exist?(openssl_crt_path)
+  system "openssl req -config #{openssl_config_path} -extensions v3_req -new -x509 -key #{openssl_key_path} -out #{openssl_crt_path} -nodes -days 6500"
+end
+
+system "sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain #{openssl_crt_path}"
 
 # create tunnels config file
 tunnel_config_path = File.join(ssl_path, 'tunnels.yml')
-Tunnels::Generator.new('tunnels.yml').write(tunnel_config_path, common_name: common_name)
+Tunnels::Generator.new('tunnels.yml').write(tunnel_config_path)
 
 # create and load tunnels launchd configation
 tunnels_launchd_temp_path = File.join(ssl_path, "gem.tunnels.plist")

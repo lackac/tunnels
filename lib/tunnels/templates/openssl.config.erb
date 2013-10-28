@@ -4,14 +4,26 @@ default_bits            = 4096
 string_mask             = nombstr
 distinguished_name      = req_dn
 x509_extensions         = v3_ca
+req_extensions          = v3_req
 
 [ req_dn ]
 0.organizationName      = ACME
 organizationalUnitName  = Development
-commonName              = <%= common_name %>
-emailAddress            = info@<%= common_name %>
+commonName              = tunnels
+emailAddress            = tunnels@example.com
 
 [ v3_ca ]
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always,issuer:always
-basicConstraints        = CA:true
+basicConstraints        = CA:TRUE
+
+[ v3_req ]
+basicConstraints        = CA:FALSE
+keyUsage                = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName          = @alt_dns
+
+[ alt_dns ]
+<% domains.each_with_index do |domain,i| %>
+DNS.<%= i*2 + 1 %> = <%= domain %>
+DNS.<%= i*2 + 2 %> = *.<%= domain %>
+<% end %>
