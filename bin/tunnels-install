@@ -3,14 +3,14 @@
 require File.absolute_path("#{File.dirname(__FILE__)}/../lib/tunnels/generator")
 require 'fileutils'
 
+raise 'Usage: tunnels-install <domain> [service_path]' unless ARGV.size > 0
+
 common_name = ARGV[0]
-rvm_wrapper = ARGV[1]
-raise 'Usage: tunnels-install <domain> <rvm wrapper name>' unless common_name && rvm_wrapper
+service_path = ARGV[1] || $0.sub(/-install$/, '')
 
 tunnels_port = 443
 
 ssl_path = File.join(Dir.home, '.ssl')
-service_path = File.join(Dir.home, '.rvm', 'bin', rvm_wrapper)
 FileUtils.mkdir_p(ssl_path)
 
 launchd_path = File.join('/Library', 'LaunchDaemons')
@@ -18,7 +18,7 @@ FileUtils.mkdir_p(launchd_path)
 
 # create OpenSSL config file
 openssl_config_path = File.join(ssl_path, 'openssl.config')
-#Tunnels::Generator.new('openssl.config').write(openssl_config_path, :common_name => common_name)
+Tunnels::Generator.new('openssl.config').write(openssl_config_path, :domains => domains)
 
 # create OpenSSL certificate
 openssl_key_path = File.join(ssl_path, "#{common_name}.key")
